@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Select,
   SelectContent,
@@ -36,28 +37,64 @@ const industries = [
 export function ContactForm() {
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [gdprConsent, setGdprConsent] = useState(false)
+  const [errorMessage, setErrorMessage] = useState('')
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setIsLoading(true)
+    setErrorMessage('')
 
-    // Simulate form submission (placeholder - no backend integration)
-    await new Promise((resolve) => setTimeout(resolve, 1500))
+    if (!gdprConsent) {
+      setErrorMessage('You must agree to the data processing terms.')
+      setIsLoading(false)
+      return
+    }
 
-    setIsLoading(false)
-    setIsSubmitted(true)
+    const formData = new FormData(e.currentTarget)
+    const payload = {
+      firstName: formData.get('firstName') as string,
+      lastName: formData.get('lastName') as string,
+      email: formData.get('email') as string,
+      company: formData.get('company') as string,
+      companySize: formData.get('companySize') as string,
+      industry: formData.get('industry') as string,
+      message: formData.get('message') as string,
+      gdprConsent,
+    }
+
+    try {
+      const response = await fetch('/api/webhook', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      })
+
+      const data = await response.json()
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to submit form.')
+      }
+
+      setIsSubmitted(true)
+    } catch (error: any) {
+      console.error('Submission error:', error)
+      setErrorMessage(error.message || 'An error occurred during submission. Please try again.')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   if (isSubmitted) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-center">
+      <div className="flex flex-col items-center justify-center py-12 text-center animate-fade-in">
         <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
           <CheckCircle2 className="h-8 w-8 text-primary" />
         </div>
         <h3 className="text-xl font-semibold mb-2">Request Received!</h3>
         <p className="text-muted-foreground max-w-sm">
-          Thank you for your interest. Marcus or a member of our team will reach out 
-          within 24 hours to schedule your consultation.
+          Thank you for your interest. We have received your roadmap request and will initiate the process.
         </p>
       </div>
     )
@@ -162,6 +199,31 @@ export function ContactForm() {
         />
       </div>
 
+      {/* GDPR Consent */}
+      <div className="flex items-start gap-3 rounded-lg border border-border/50 bg-secondary/10 p-4">
+        <Checkbox
+          id="gdprConsent"
+          name="gdprConsent"
+          checked={gdprConsent}
+          onCheckedChange={(checked) => setGdprConsent(checked === true)}
+        />
+        <div className="grid gap-1.5 leading-none">
+          <Label
+            htmlFor="gdprConsent"
+            className="text-xs font-medium text-muted-foreground leading-normal cursor-pointer select-none"
+          >
+            I consent to the collection and processing of my business details and agree to receive my personalized Audit Roadmap via email in accordance with the Privacy Policy.
+          </Label>
+        </div>
+      </div>
+
+      {/* Error Message */}
+      {errorMessage && (
+        <div className="text-sm font-medium text-destructive bg-destructive/10 border border-destructive/20 rounded-lg p-3 text-center">
+          {errorMessage}
+        </div>
+      )}
+
       {/* Submit */}
       <Button
         type="submit"
@@ -173,7 +235,7 @@ export function ContactForm() {
           'Submitting...'
         ) : (
           <>
-            Get My Automation Roadmap
+            Get My Full Audit RoadMap
             <ArrowRight className="ml-2 h-4 w-4" />
           </>
         )}
