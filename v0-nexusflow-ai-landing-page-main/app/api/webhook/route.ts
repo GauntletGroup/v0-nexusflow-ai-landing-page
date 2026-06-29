@@ -20,12 +20,12 @@ export async function POST(request: Request) {
       )
     }
 
-    const webhookUrl = process.env.N8N_WEBOOK_URL || process.env.N8N_WEBHOOK_URL
+    const webhookUrl = process.env.N8N_CONTACT_WEBHOOK_URL || process.env.N8N_WEBOOK_URL || process.env.N8N_WEBHOOK_URL
 
     if (!webhookUrl) {
-      console.error('N8N webhook URL is not configured.')
+      console.error('N8N contact webhook URL is not configured.')
       return NextResponse.json(
-        { error: 'Server configuration error: webhook endpoint not set.' },
+        { error: 'Server configuration error: contact webhook endpoint not set.' },
         { status: 500 }
       )
     }

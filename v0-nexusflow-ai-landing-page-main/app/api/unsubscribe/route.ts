@@ -12,38 +12,38 @@ export async function POST(request: Request) {
       )
     }
 
-    const webhookUrl = process.env.N8N_WEBOOK_URL || process.env.N8N_WEBHOOK_URL
+    const webhookUrl = process.env.N8N_UNSUBSCRIBE_WEBHOOK_URL || process.env.N8N_WEBOOK_URL || process.env.N8N_WEBHOOK_URL
 
     if (!webhookUrl) {
-      console.error('N8N webhook URL is not configured.')
+      console.error('N8N unsubscribe webhook URL is not configured.')
       return NextResponse.json(
-        { error: 'Server configuration error: webhook endpoint not set.' },
+        { error: 'Server configuration error: unsubscribe webhook endpoint not set.' },
         { status: 500 }
       )
     }
 
-    // Build payload depending on action
-    const payload = {
+    // Build the query parameters for the GET request to n8n
+    const queryParams = new URLSearchParams({
       action: action === 'feedback' ? 'unsubscribe_feedback' : 'resubscribe',
       email: email || 'anonymous',
       reason: reason || '',
       details: details || '',
       submittedAt: new Date().toISOString(),
       source: 'NexusFlow AI Unsubscribe Page'
-    }
+    })
 
-    // Forward to n8n webhook
-    const response = await fetch(webhookUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(payload),
+    // Construct the final URL with query parameters
+    const separator = webhookUrl.includes('?') ? '&' : '?'
+    const finalWebhookUrl = `${webhookUrl}${separator}${queryParams.toString()}`
+
+    // Send data to n8n unsubscribe webhook as a GET request
+    const response = await fetch(finalWebhookUrl, {
+      method: 'GET',
     })
 
     if (!response.ok) {
       const errText = await response.text()
-      console.error('n8n Webhook Error:', errText)
+      console.error('n8n Unsubscribe Webhook Error:', errText)
       return NextResponse.json(
         { error: `n8n webhook error: ${response.status} ${response.statusText}` },
         { status: 502 }
