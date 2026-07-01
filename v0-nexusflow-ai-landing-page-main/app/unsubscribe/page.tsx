@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, Suspense } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { CheckCircle2, ArrowRight, Mail, AlertCircle, HeartCrack } from 'lucide-react'
@@ -29,6 +29,35 @@ function UnsubscribeContent() {
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+
+  // Automatically trigger unsubscribe on page load
+  useEffect(() => {
+    if (email) {
+      const performUnsubscribe = async () => {
+        setIsLoading(true)
+        setError('')
+        try {
+          const res = await fetch('/api/unsubscribe', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'unsubscribe',
+              email,
+            }),
+          })
+          if (!res.ok) {
+            throw new Error('Failed to process unsubscribe request.')
+          }
+        } catch (err: any) {
+          console.error('Auto-unsubscribe error:', err)
+          setError(err.message || 'Something went wrong processing your request.')
+        } finally {
+          setIsLoading(false)
+        }
+      }
+      performUnsubscribe()
+    }
+  }, [email])
 
   const handleFeedbackSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

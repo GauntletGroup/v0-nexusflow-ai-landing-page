@@ -5,7 +5,7 @@ export async function POST(request: Request) {
     const body = await request.json()
     const { action, email, reason, details } = body
 
-    if (!action || !['feedback', 'resubscribe'].includes(action)) {
+    if (!action || !['unsubscribe', 'feedback', 'resubscribe'].includes(action)) {
       return NextResponse.json(
         { error: 'Invalid or missing action field.' },
         { status: 400 }
@@ -23,8 +23,12 @@ export async function POST(request: Request) {
     }
 
     // Build the query parameters for the GET request to n8n
+    let actionParam = 'unsubscribe'
+    if (action === 'feedback') actionParam = 'unsubscribe_feedback'
+    if (action === 'resubscribe') actionParam = 'resubscribe'
+
     const queryParams = new URLSearchParams({
-      action: action === 'feedback' ? 'unsubscribe_feedback' : 'resubscribe',
+      action: actionParam,
       email: email || 'anonymous',
       reason: reason || '',
       details: details || '',
